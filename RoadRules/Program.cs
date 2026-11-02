@@ -13,7 +13,7 @@ builder.Services.AddRazorComponents()
 // DbContext would live for the whole user circuit; a factory gives each
 // operation a short-lived context, which is the pattern Microsoft recommends.
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<ILimitSource, EfLimitSource>();
 builder.Services.AddScoped<IWeightCalculator, WeightCalculator>();
