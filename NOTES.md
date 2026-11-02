@@ -20,6 +20,10 @@
 | `WeightCalculator` ignores `EffectiveFrom`; the July 2026 row (Id 17, 17,500) exists but is never used | Deliberate gap in tier one | Left as is | Fixed by tier two, step 11 |
 | NU1903: `System.Security.Cryptography.Pkcs` 9.0.11 has a high-severity advisory | Transitive: EF Core SqlServer → Microsoft.Data.SqlClient 6.1.7 → Pkcs 9.0.11 | Pinned `System.Security.Cryptography.Pkcs` 10.0.14 in `RoadRules.csproj` | `dotnet nuget why <project> <package>` shows the chain |
 | Jurisdictions page shows 5 limits per jurisdiction on SQL Server, not 3 | The 10 migrated rows are included | Expected | |
+| Dockerfile image tags | Guide uses 8.0 | `sdk:10.0` and `aspnet:10.0` | Image major must match the SDK major |
+| In the container, `/_framework/blazor.web.js` was **404**, so the page would render but no button would work | The SDK adds the package that ships `blazor.web.js` only when it sees `.razor` files at restore; the Dockerfile restores with only the `.csproj` copied, then publishes `--no-restore` | Set `<RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>` in the csproj; Dockerfile unchanged | Layer-cached restores see a partial project; on .NET 10 that changes what gets restored |
+| Container logs: "Failed to determine the https port for redirect" | No HTTPS port inside the container | Nothing | Harmless behind a reverse proxy, as the guide says |
+| Container logs: DataProtection keys stored in a non-persisted directory | Keys live in the container filesystem | Nothing for a toy | A real deployment persists keys (volume, blob storage, Key Vault) |
 
 ## Migration reconciliation (step 7)
 
@@ -32,3 +36,15 @@
 | Id 17 (July tandem) | 17,500 | present, 17,500 |
 
 Sum check by hand: seeded 252,300 + ten added 164,050 = 416,350.
+
+## What each piece demonstrates
+
+| Piece | What it shows |
+|---|---|
+| Blazor pages and EditForm | A component with an EditForm, DataAnnotations validation and two-way binding. |
+| Service behind an interface | The page holds no logic; it injects IWeightCalculator, and the calculator takes an ILimitSource so the tests never touch a database. |
+| DbContextFactory | A context factory rather than a scoped DbContext, because in Blazor Server scoped means per circuit, not per request. |
+| xUnit tests | Six tests against a fake source, one broken on purpose to watch it fail. |
+| SQLite to SQL Server | Migrations regenerated for the new provider, rows that only existed in SQLite moved and reconciled by count and sum. |
+| Dockerfile | Multi-stage build, runtime image only, connection string injected as an environment variable, migration at startup that belongs in a pipeline in production. |
+| GitHub repo | A README that says what it is, how to run it, and what was left out on purpose. |
